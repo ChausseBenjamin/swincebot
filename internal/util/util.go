@@ -2,12 +2,15 @@ package util
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+var ErrOutOfBoundsPort = errors.New("given port is out of bounds (1024-65535)")
 
 type ContextKey uint8
 

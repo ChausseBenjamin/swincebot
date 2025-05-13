@@ -8,14 +8,9 @@ CREATE TABLE Swinceurs (
   swince_id UUID NOT NULL,
   discord_id INTEGER NOT NULL, -- is a 64 bit int
   late_swince_tax REAL NOT NULL CHECK (late_swince_tax BETWEEN 0 AND 1),
-  PRIMARY KEY (task_id, tag_id),
-  FOREIGN KEY (swince_id) REFERENCES Swinces(swince_id) ON DELETE CASCADE
-);
-
-CREATE TABLE Nominees (
-  swince_id UUID NOT NULL,
-  discord_id INTEGER NOT NULL, -- is a 64 bit int
-  PRIMARY KEY (task_id, tag_id),
+  nominates INTEGER NOT NULL, -- is a 64 bit int
+  nomination_fulfilled REAL NOT NULL CHECK (late_swince_tax BETWEEN 0 AND 1),
+  PRIMARY KEY (swince_id, discord_id),
   FOREIGN KEY (swince_id) REFERENCES Swinces(swince_id) ON DELETE CASCADE
 );
 

@@ -16,12 +16,13 @@ import (
 const (
 	FlagDBPath       = "database"
 	FlagGraceTimeout = "grace-timeout"
-	FlagListenPort   = "port"
 	FlagLogFormat    = "log-format"
 	FlagLogLevel     = "log-level"
 	FlagLogOutput    = "log-output"
 	FlagSecretsPath  = "secrets-path"
 	FlagDBCacheSize  = "database-cache-size"
+	FlagDiscordToken = "discord-token"
+	FlagBotAdmins    = "bot-admins-list"
 )
 
 func flags() []cli.Flag {
@@ -51,7 +52,16 @@ func flags() []cli.Flag {
 			Sources: cli.EnvVars("LOG_LEVEL"),
 			Action:  validateLogLevel,
 		}, // }}}
-		// discord Bot {{{
+		// Discord Bot {{{
+		&cli.StringFlag{
+			Name:    FlagDiscordToken,
+			Sources: cli.EnvVars("DISCORD_TOKEN"),
+		},
+		&cli.IntSliceFlag{
+			Name:    FlagBotAdmins,
+			Sources: cli.EnvVars("DISCORD_BOT_ADMINS"),
+			Value:   []int64{0},
+		},
 		&cli.DurationFlag{
 			Name:    FlagGraceTimeout,
 			Aliases: []string{"t"},
@@ -121,14 +131,3 @@ func validateLogFormat(ctx context.Context, cmd *cli.Command, s string) error {
 	}
 	return nil
 }
-
-// func validateListenPort(ctx context.Context, cmd *cli.Command, p int64) error {
-// 	if p < 1024 || p > 65535 {
-// 		slog.ErrorContext(
-// 			ctx,
-// 			fmt.Sprintf("Out-of-bound port provided: %d", p),
-// 		)
-// 		return util.ErrOutOfBoundsPort
-// 	}
-// 	return nil
-// }

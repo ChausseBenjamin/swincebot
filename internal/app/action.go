@@ -2,18 +2,16 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
-	"net"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/ChausseBenjamin/swincebot/internal/client"
 	"github.com/ChausseBenjamin/swincebot/internal/database"
 	"github.com/ChausseBenjamin/swincebot/internal/logging"
-	"github.com/ChausseBenjamin/swincebot/internal/secrets"
 	"github.com/ChausseBenjamin/swincebot/internal/util"
 	"github.com/urfave/cli/v3"
 )
@@ -39,7 +37,7 @@ func action(ctx context.Context, cmd *cli.Command) error {
 	brutalShutdown := func() {}
 
 	application := func() {
-		db, err := initApp(ctx, cmd)
+		db, bot, err := initApp(ctx, cmd)
 		if err != nil {
 			errAppChan <- err
 			return
@@ -50,6 +48,7 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			once.Do(func() { // Ensure brutal shutdown isn't triggered later
 				db.DB.Close()
 				db.Queries.Close()
+				bot.Close()
 				slog.InfoContext(ctx, "Application shutdown")
 				close(shutdownDone) // Signal that graceful shutdown is complete
 			})
@@ -60,22 +59,16 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			slog.WarnContext(ctx,
 				"Graceful shutdown delay exceeded, shutting down NOW!",
 			)
-			db.DB.Close()
-			db.Queries.Close()
+			go db.DB.Close()
+			go db.Queries.Close()
+			go bot.Close()
 		}
 
-		port := fmt.Sprintf(":%d", cmd.Int(FlagListenPort))
-		_, err = net.Listen("tcp", port)
-		if err != nil {
+		slog.InfoContext(ctx, "Discord bot listening")
+		if err := bot.Open(); err != nil {
 			errAppChan <- err
-			return
 		}
-		slog.InfoContext(ctx, "Server listening", "port", cmd.Int(FlagListenPort))
 
-		// TODO: Make the discord bot start listening
-		// if err := server.Serve(listener); err != nil {
-		// 	errAppChan <- err
-		// }
 	}
 	go application()
 
@@ -109,21 +102,20 @@ func waitForTermChan() chan os.Signal {
 	return stopChan
 }
 
-// TODO: Initialize discord API client here
-func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, error) {
+func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, *client.DiscordBot, error) {
 	globalConf := &util.ConfigStore{
 		DBCacheSize: int(-cmd.Uint(FlagDBCacheSize)),
 	}
 
-	_, err := secrets.NewDirVault(cmd.String(FlagSecretsPath))
-	if err != nil {
-		return nil, err
-	}
-
 	db, err := database.Setup(ctx, cmd.String(FlagDBPath), globalConf)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return db, nil
+	bot, err := client.New(cmd.String(FlagDiscordToken), cmd.IntSlice(FlagBotAdmins))
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return db, bot, nil
 }

@@ -27,7 +27,6 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			logging.ErrKey, err,
 		)
 	}
-	slog.InfoContext(ctx, "Starting swincebot server")
 
 	errAppChan := make(chan error)
 	shutdownDone := make(chan struct{}) // Signals when graceful shutdown is done
@@ -43,11 +42,21 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			return
 		}
 
+		if err := bot.Open(); err != nil {
+			slog.Error("An error occured starting the discord bot", logging.ErrKey, err)
+		}
+		cmds, err := bot.RegisterCommands()
+		if err != nil {
+			slog.Error("Failed to register slash commands for the discord bot", logging.ErrKey, err)
+		}
+		slog.InfoContext(ctx, "Starting swincebot server")
+
 		//nolint:errcheck
 		gracefulShutdown = func() {
 			once.Do(func() { // Ensure brutal shutdown isn't triggered later
 				db.DB.Close()
 				db.Queries.Close()
+				bot.UnregisterCommands(cmds)
 				bot.Close()
 				slog.InfoContext(ctx, "Application shutdown")
 				close(shutdownDone) // Signal that graceful shutdown is complete
@@ -65,10 +74,6 @@ func action(ctx context.Context, cmd *cli.Command) error {
 		}
 
 		slog.InfoContext(ctx, "Discord bot listening")
-		if err := bot.Open(); err != nil {
-			errAppChan <- err
-		}
-
 	}
 	go application()
 

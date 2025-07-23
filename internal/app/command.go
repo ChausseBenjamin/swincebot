@@ -9,7 +9,7 @@ const (
 	AppUsage = "Your personal swince leaderboard manager ;)"
 )
 
-var version = "COMPILED"
+var version = "dev"
 
 func Command() *cli.Command {
 	return &cli.Command{

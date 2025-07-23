@@ -45,7 +45,7 @@ func action(ctx context.Context, cmd *cli.Command) error {
 		if err := bot.Open(); err != nil {
 			slog.Error("An error occured starting the discord bot", logging.ErrKey, err)
 		}
-		cmds, err := bot.RegisterCommands()
+		_, err = bot.RegisterCommands()
 		if err != nil {
 			slog.Error("Failed to register slash commands for the discord bot", logging.ErrKey, err)
 		}
@@ -56,7 +56,7 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			once.Do(func() { // Ensure brutal shutdown isn't triggered later
 				db.DB.Close()
 				db.Queries.Close()
-				bot.UnregisterCommands(cmds)
+				// bot.UnregisterCommands(cmds)
 				bot.Close()
 				slog.InfoContext(ctx, "Application shutdown")
 				close(shutdownDone) // Signal that graceful shutdown is complete
@@ -117,7 +117,7 @@ func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, *client.
 		return nil, nil, err
 	}
 
-	bot, err := client.New(cmd.String(FlagDiscordToken), cmd.IntSlice(FlagBotAdmins))
+	bot, err := client.New(cmd.String(FlagDiscordToken), cmd.IntSlice(FlagBotAdmins), db.Queries)
 	if err != nil {
 		return nil, nil, err
 	}

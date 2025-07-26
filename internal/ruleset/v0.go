@@ -19,6 +19,14 @@ type v0 struct {
 	seasonIndex int
 }
 
+// NewV0 creates a new v0 ruleset with the provided database connection
+func NewV0(db *database.ProtoDB) *v0 {
+	return &v0{
+		db:          db,
+		seasonIndex: seasonNotSet,
+	}
+}
+
 // setSeason sets the season index for this v0 ruleset instance
 func (rs *v0) setSeason(seasonIndex int) {
 	rs.seasonIndex = seasonIndex
@@ -204,14 +212,6 @@ func (rs *v0) Leaderboard(ctx context.Context, count int) (Leaderboard, error) {
 	}
 
 	return leaderboard, nil
-}
-
-// NewV0 creates a new v0 ruleset with the provided database connection
-func NewV0(db *database.ProtoDB) *v0 {
-	return &v0{
-		db:          db,
-		seasonIndex: seasonNotSet,
-	}
 }
 
 // getSeasonTimeRange returns the start and end time for this ruleset's season

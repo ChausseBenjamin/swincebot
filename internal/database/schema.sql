@@ -46,4 +46,3 @@ CREATE TABLE Rulesets (
     ),
     start_time TIMESTAMP NOT NULL
 );
-

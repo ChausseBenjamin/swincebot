@@ -15,6 +15,6 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 .PHONY: run
-run: setup codegen
+run: codegen
 	./resources/local_dev.sh
 

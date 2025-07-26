@@ -9,7 +9,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ChausseBenjamin/swincebot/internal/client"
 	"github.com/ChausseBenjamin/swincebot/internal/database"
 	"github.com/ChausseBenjamin/swincebot/internal/logging"
 	"github.com/ChausseBenjamin/swincebot/internal/util"
@@ -29,51 +28,32 @@ func action(ctx context.Context, cmd *cli.Command) error {
 	}
 
 	errAppChan := make(chan error)
-	shutdownDone := make(chan struct{}) // Signals when graceful shutdown is done
+	shutdownDone := make(chan struct{})
 
 	var once sync.Once
+	var db *database.ProtoDB
 	gracefulShutdown := func() {}
-	brutalShutdown := func() {}
 
 	application := func() {
-		db, bot, err := initApp(ctx, cmd)
+		var err error
+		db, err = initApp(ctx, cmd)
 		if err != nil {
 			errAppChan <- err
 			return
 		}
 
-		if err := bot.Open(); err != nil {
-			slog.Error("An error occured starting the discord bot", logging.ErrKey, err)
-		}
-		_, err = bot.RegisterCommands()
-		if err != nil {
-			slog.Error("Failed to register slash commands for the discord bot", logging.ErrKey, err)
-		}
-		slog.InfoContext(ctx, "Starting swincebot server")
+		slog.InfoContext(ctx, "Starting application server")
 
-		//nolint:errcheck
 		gracefulShutdown = func() {
-			once.Do(func() { // Ensure brutal shutdown isn't triggered later
+			once.Do(func() {
 				db.DB.Close()
 				db.Queries.Close()
-				// bot.UnregisterCommands(cmds)
-				bot.Close()
 				slog.InfoContext(ctx, "Application shutdown")
-				close(shutdownDone) // Signal that graceful shutdown is complete
+				close(shutdownDone)
 			})
 		}
 
-		//nolint:errcheck
-		brutalShutdown = func() {
-			slog.WarnContext(ctx,
-				"Graceful shutdown delay exceeded, shutting down NOW!",
-			)
-			go db.DB.Close()
-			go db.Queries.Close()
-			go bot.Close()
-		}
-
-		slog.InfoContext(ctx, "Discord bot listening")
+		slog.InfoContext(ctx, "Application listening")
 	}
 	go application()
 
@@ -91,9 +71,13 @@ func action(ctx context.Context, cmd *cli.Command) error {
 			go gracefulShutdown()
 
 			select {
-			case <-time.After(cmd.Duration(FlagGraceTimeout)): // Timeout exceeded
-				brutalShutdown()
-			case <-shutdownDone: // If graceful shutdown is timely, exit normally
+			case <-time.After(cmd.Duration(FlagGraceTimeout)):
+				slog.WarnContext(ctx, "Graceful shutdown delay exceeded, shutting down NOW!")
+				if db != nil {
+					go db.DB.Close()
+					go db.Queries.Close()
+				}
+			case <-shutdownDone:
 			}
 			running = false
 		}
@@ -107,20 +91,15 @@ func waitForTermChan() chan os.Signal {
 	return stopChan
 }
 
-func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, *client.DiscordBot, error) {
+func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, error) {
 	globalConf := &util.ConfigStore{
 		DBCacheSize: int(-cmd.Uint(FlagDBCacheSize)),
 	}
 
 	db, err := database.Setup(ctx, cmd.String(FlagDBPath), globalConf)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	bot, err := client.New(cmd.String(FlagDiscordToken), cmd.IntSlice(FlagBotAdmins), db.Queries)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return db, bot, nil
+	return db, nil
 }

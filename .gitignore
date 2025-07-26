@@ -1,7 +1,9 @@
 build/
+AGENTS.md
+.env
 .runtime/
 .secrets/
 .runtime
 .secrets
-rafta
+swincebot
 store.db

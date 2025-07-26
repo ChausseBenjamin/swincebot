@@ -14,23 +14,40 @@ import (
 
 // Avoids string mismatches when calling cmd.String(), cmd.Int(), etc...
 const (
-	FlagDBPath       = "database"
-	FlagGraceTimeout = "grace-timeout"
-	FlagLogFormat    = "log-format"
-	FlagLogLevel     = "log-level"
-	FlagLogOutput    = "log-output"
-	FlagSecretsPath  = "secrets-path"
-	FlagDBCacheSize  = "database-cache-size"
-	FlagDiscordToken = "discord-token"
-	FlagBotAdmins    = "bot-admins-list"
+	FlagDBPath         = "database"
+	FlagGraceTimeout   = "grace-timeout"
+	FlagLogFormat      = "log-format"
+	FlagLogLevel       = "log-level"
+	FlagLogOutput      = "log-output"
+	FlagSecretsPath    = "secrets-path"
+	FlagDBCacheSize    = "database-cache-size"
+	FlagDiscordServer  = "discord-server-id"
+	FlagDiscordChannel = "discord-channel-id"
 )
 
 func flags() []cli.Flag {
 	return []cli.Flag{
+		&cli.DurationFlag{
+			Name:    FlagGraceTimeout,
+			Value:   3 * time.Second,
+			Sources: cli.EnvVars("GRACEFUL_TIMEOUT"),
+		},
+		// Discord {{{
+		&cli.UintFlag{
+			Name:     FlagDiscordServer,
+			Usage:    "Server the bot is involved int (1 bot per server)",
+			Sources:  cli.EnvVars("DISCORD_GUILD_ID"),
+			Required: true,
+		},
+		&cli.UintFlag{
+			Name:     FlagDiscordChannel,
+			Usage:    "Channel where official bot communications occur",
+			Sources:  cli.EnvVars("DISCORD_CHANNEL_ID"),
+			Required: true,
+		}, // }}}
 		// Logging {{{
 		&cli.StringFlag{
 			Name:    FlagLogFormat,
-			Aliases: []string{"f"},
 			Value:   "plain",
 			Usage:   "plain, json, none",
 			Sources: cli.EnvVars("LOG_FORMAT"),
@@ -38,7 +55,6 @@ func flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    FlagLogOutput,
-			Aliases: []string{"o"},
 			Value:   "stdout",
 			Usage:   "stdout, stderr, file",
 			Sources: cli.EnvVars("LOG_OUTPUT"),
@@ -46,27 +62,10 @@ func flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    FlagLogLevel,
-			Aliases: []string{"l"},
 			Value:   "info",
 			Usage:   "debug, info, warn, error",
 			Sources: cli.EnvVars("LOG_LEVEL"),
 			Action:  validateLogLevel,
-		}, // }}}
-		// Discord Bot {{{
-		&cli.StringFlag{
-			Name:    FlagDiscordToken,
-			Sources: cli.EnvVars("DISCORD_TOKEN"),
-		},
-		&cli.IntSliceFlag{
-			Name:    FlagBotAdmins,
-			Sources: cli.EnvVars("DISCORD_BOT_ADMINS"),
-			Value:   []int64{0},
-		},
-		&cli.DurationFlag{
-			Name:    FlagGraceTimeout,
-			Aliases: []string{"t"},
-			Value:   3 * time.Second,
-			Sources: cli.EnvVars("GRACEFUL_TIMEOUT"),
 		}, // }}}
 		// Database {{{
 		&cli.UintFlag{
@@ -77,7 +76,6 @@ func flags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:    FlagDBPath,
-			Aliases: []string{"d"},
 			Value:   "store.db",
 			Usage:   "database file",
 			Sources: cli.EnvVars("DATABASE_PATH"),

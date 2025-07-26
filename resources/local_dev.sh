@@ -4,7 +4,6 @@ localsecrets=".secrets"
 localruntime=".runtime"
 
 binpath="build/swincebot"
-token="$(pass discord/swincebot)"
 
 mkdir -p "$localruntime" || exit 1
 [ -f "$localruntime/.gitignore" ] || echo '*' > "$localruntime/.gitignore"
@@ -17,7 +16,8 @@ env_vars=$(cat << EOF
   LISTEN_PORT=1157
   DATABASE_PATH=$localruntime/store.db
   GRACEFUL_TIMEOUT=200ms
-	DISCORD_TOKEN=$token
+  DISCORD_GUILD_ID=$(pass swincebot/guild-id)
+  DISCORD_CHANNEL_ID=$(pass swincebot/channel-id)
   CGO_ENABLED=1
 EOF
 )

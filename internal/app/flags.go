@@ -14,28 +14,24 @@ import (
 
 // Avoids string mismatches when calling cmd.String(), cmd.Int(), etc...
 const (
-	FlagDBPath         = "database"
-	FlagGraceTimeout   = "grace-timeout"
-	FlagLogFormat      = "log-format"
-	FlagLogLevel       = "log-level"
-	FlagLogOutput      = "log-output"
-	FlagSecretsPath    = "secrets-path"
-	FlagDBCacheSize    = "database-cache-size"
-	FlagDiscordServer  = "discord-server-id"
-	FlagDiscordChannel = "discord-channel-id"
+	FlagDBPath              = "database"
+	FlagGraceTimeout        = "grace-timeout"
+	FlagLogFormat           = "log-format"
+	FlagLogLevel            = "log-level"
+	FlagLogOutput           = "log-output"
+	FlagSecretsPath         = "secrets-path"
+	FlagDBCacheSize         = "database-cache-size"
+	FlagDiscordServer       = "discord-server-id"
+	FlagDiscordChannel      = "discord-channel-id"
+	FlagConversationTimeout = "discord-conversation-timeout"
 )
 
 func flags() []cli.Flag {
 	return []cli.Flag{
-		&cli.DurationFlag{
-			Name:    FlagGraceTimeout,
-			Value:   3 * time.Second,
-			Sources: cli.EnvVars("GRACEFUL_TIMEOUT"),
-		},
 		// Discord {{{
 		&cli.UintFlag{
 			Name:     FlagDiscordServer,
-			Usage:    "Server the bot is involved int (1 bot per server)",
+			Usage:    "Server the bot is involved int (1 bot per discord server)",
 			Sources:  cli.EnvVars("DISCORD_GUILD_ID"),
 			Required: true,
 		},
@@ -44,26 +40,32 @@ func flags() []cli.Flag {
 			Usage:    "Channel where official bot communications occur",
 			Sources:  cli.EnvVars("DISCORD_CHANNEL_ID"),
 			Required: true,
+		},
+		&cli.DurationFlag{
+			Name:    FlagConversationTimeout,
+			Usage:   "How long before an active DM conversation gets cancelled due to inactivity",
+			Sources: cli.EnvVars("DISCORD_CONVERSATION_TIMEOUT"),
+			Value:   15 * time.Minute,
 		}, // }}}
 		// Logging {{{
 		&cli.StringFlag{
 			Name:    FlagLogFormat,
-			Value:   "plain",
 			Usage:   "plain, json, none",
+			Value:   "plain",
 			Sources: cli.EnvVars("LOG_FORMAT"),
 			Action:  validateLogFormat,
 		},
 		&cli.StringFlag{
 			Name:    FlagLogOutput,
-			Value:   "stdout",
 			Usage:   "stdout, stderr, file",
+			Value:   "stdout",
 			Sources: cli.EnvVars("LOG_OUTPUT"),
 			Action:  validateLogOutput,
 		},
 		&cli.StringFlag{
 			Name:    FlagLogLevel,
-			Value:   "info",
 			Usage:   "debug, info, warn, error",
+			Value:   "info",
 			Sources: cli.EnvVars("LOG_LEVEL"),
 			Action:  validateLogLevel,
 		}, // }}}
@@ -81,10 +83,16 @@ func flags() []cli.Flag {
 			Sources: cli.EnvVars("DATABASE_PATH"),
 		}, // }}}
 		// Service {{{
+		&cli.DurationFlag{
+			Name:    FlagGraceTimeout,
+			Usage:   "Maximum time given to terminate active connections before being force-killed",
+			Value:   3 * time.Second,
+			Sources: cli.EnvVars("GRACEFUL_TIMEOUT"),
+		},
 		&cli.StringFlag{
 			Name:    FlagSecretsPath,
+			Usage:   "Directory containing necessary secrets (tokens, etc...)",
 			Value:   "/etc/secrets",
-			Usage:   "Directory containing necessary secrets (ca_certs, private keys, etc...)",
 			Sources: cli.EnvVars("SECRETS_PATH"),
 		}, // }}}
 	}

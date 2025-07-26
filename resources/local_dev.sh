@@ -14,6 +14,7 @@ env_vars=$(cat << EOF
   LOG_FORMAT=plain
   LOG_OUTPUT=stdout
   LISTEN_PORT=1157
+  SECRETS_PATH=$localsecrets
   DATABASE_PATH=$localruntime/store.db
   GRACEFUL_TIMEOUT=200ms
   DISCORD_GUILD_ID=$(pass swincebot/guild-id)

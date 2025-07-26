@@ -10,7 +10,9 @@ import (
 	"time"
 
 	"github.com/ChausseBenjamin/swincebot/internal/database"
+	"github.com/ChausseBenjamin/swincebot/internal/discord"
 	"github.com/ChausseBenjamin/swincebot/internal/logging"
+	"github.com/ChausseBenjamin/swincebot/internal/secrets"
 	"github.com/ChausseBenjamin/swincebot/internal/util"
 	"github.com/urfave/cli/v3"
 )
@@ -100,6 +102,37 @@ func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	// Initialize secrets vault
+	vault, err := secrets.NewDirVault(cmd.String(FlagSecretsPath))
+	if err != nil {
+		return nil, err
+	}
+
+	// Initialize Discord client
+	discordClient, err := discord.NewClient(
+		ctx,
+		cmd.Uint(FlagDiscordServer),
+		cmd.Uint(FlagDiscordChannel),
+		vault,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	// Test connection by logging users
+	users, err := discordClient.GetMembers()
+	if err != nil {
+		slog.ErrorContext(ctx, "Failed to get Discord members", logging.ErrKey, err)
+	} else {
+		slog.InfoContext(ctx, "Discord connection successful", "user_count", len(users))
+		for _, user := range users {
+			slog.InfoContext(ctx, "Discord user found", "user_id", user.ID, "nickname", user.Nick)
+		}
+	}
+
+	// Close Discord connection for now (we'll keep it open later)
+	discordClient.Close()
 
 	return db, nil
 }

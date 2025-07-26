@@ -220,7 +220,7 @@ func newDB(ctx context.Context, path string) (*sql.DB, error) {
 func validateSchema(ctx context.Context, db *sql.DB, expectedSchema string) error {
 	actualSchema, err := fetchSchema(db)
 	if err != nil {
-		slog.ErrorContext(ctx, "failed to fetch schema", "error", err)
+		slog.ErrorContext(ctx, "failed to fetch schema", logging.ErrKey, err)
 		return errSchemaMismatch
 	}
 

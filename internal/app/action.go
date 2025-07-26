@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ChausseBenjamin/swincebot/internal/bot"
 	"github.com/ChausseBenjamin/swincebot/internal/database"
 	"github.com/ChausseBenjamin/swincebot/internal/discord"
 	"github.com/ChausseBenjamin/swincebot/internal/logging"
@@ -120,19 +121,14 @@ func initApp(ctx context.Context, cmd *cli.Command) (*database.ProtoDB, error) {
 		return nil, err
 	}
 
-	// Test connection by logging users
-	users, err := discordClient.GetMembers()
+	// Initialize bot with slash commands
+	_, err = bot.NewBot(ctx, discordClient, cmd.Uint(FlagDiscordServer), cmd.Uint(FlagDiscordChannel))
 	if err != nil {
-		slog.ErrorContext(ctx, "Failed to get Discord members", logging.ErrKey, err)
-	} else {
-		slog.InfoContext(ctx, "Discord connection successful", "user_count", len(users))
-		for _, user := range users {
-			slog.InfoContext(ctx, "Discord user found", "user_id", user.ID, "nickname", user.Nick)
-		}
+		discordClient.Close()
+		return nil, err
 	}
 
-	// Close Discord connection for now (we'll keep it open later)
-	discordClient.Close()
+	slog.InfoContext(ctx, "Bot initialized successfully")
 
 	return db, nil
 }

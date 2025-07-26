@@ -25,8 +25,8 @@ CREATE TABLE Swinces (
             hex(randomblob(6))
         )
     ),
-    participant_id TEXT NOT NULL, -- person performing the swince
-    nominee_id TEXT, -- person nominated: optional as you *can* nominate nobody (loser)
+    participant_id INTEGER NOT NULL, -- person performing the swince (Discord user ID)
+    nominee_id INTEGER, -- person nominated: optional as you *can* nominate nobody (loser)
     fulfillment_id TEXT, -- ID of the Swince that fullfills the nomination
     PRIMARY KEY (event_id, swince_id),
     FOREIGN KEY (event_id) REFERENCES Events(event_id) ON DELETE CASCADE,

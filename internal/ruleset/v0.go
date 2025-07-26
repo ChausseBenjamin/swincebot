@@ -56,11 +56,9 @@ func (rs *v0) Score(ctx context.Context, u discord.User) (int, error) {
 		return 0, fmt.Errorf("getting season time range: %w", err)
 	}
 
-	userIDStr := fmt.Sprintf("%d", u.ID)
-
 	// Get user swinces (1pt each)
 	swinces, err := rs.db.GetUserSwinces(ctx, database.GetUserSwincesParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -70,7 +68,7 @@ func (rs *v0) Score(ctx context.Context, u discord.User) (int, error) {
 
 	// Get user nominations that were fulfilled (2pts each)
 	nominations, err := rs.db.GetUserNominations(ctx, database.GetUserNominationsParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -80,7 +78,7 @@ func (rs *v0) Score(ctx context.Context, u discord.User) (int, error) {
 
 	// Get user fulfillments (2pts each)
 	fulfillments, err := rs.db.GetUserFulfillments(ctx, database.GetUserFulfillmentsParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -104,11 +102,9 @@ func (rs *v0) ScoreStr(ctx context.Context, u discord.User) (string, error) {
 		return "", fmt.Errorf("getting season time range: %w", err)
 	}
 
-	userIDStr := fmt.Sprintf("%d", u.ID)
-
 	// Get individual components
 	swinces, err := rs.db.GetUserSwinces(ctx, database.GetUserSwincesParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -117,7 +113,7 @@ func (rs *v0) ScoreStr(ctx context.Context, u discord.User) (string, error) {
 	}
 
 	nominations, err := rs.db.GetUserNominations(ctx, database.GetUserNominationsParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -126,7 +122,7 @@ func (rs *v0) ScoreStr(ctx context.Context, u discord.User) (string, error) {
 	}
 
 	fulfillments, err := rs.db.GetUserFulfillments(ctx, database.GetUserFulfillmentsParams{
-		ParticipantID: userIDStr,
+		ParticipantID: u.ID,
 		Time:          seasonStart,
 		Time_2:        seasonEnd,
 	})
@@ -171,13 +167,7 @@ func (rs *v0) Leaderboard(ctx context.Context, count int) (Leaderboard, error) {
 	}
 
 	userScores := make([]userScore, 0, len(userIDs))
-	for _, userIDStr := range userIDs {
-		// Parse user ID
-		var userID uint64
-		if _, err := fmt.Sscanf(userIDStr, "%d", &userID); err != nil {
-			continue // Skip invalid user IDs
-		}
-
+	for _, userID := range userIDs {
 		user := discord.User{ID: userID}
 		score, err := rs.Score(ctx, user)
 		if err != nil {
